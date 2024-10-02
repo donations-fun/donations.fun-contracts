@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { outputJsonSync } from 'fs-extra';
 import readlineSync from 'readline-sync';
+import { AbiCoder, keccak256 } from 'ethers';
 
 export function loadConfig(networkName: string) {
     return require(`${__dirname}/../../config/${networkName}.json`);

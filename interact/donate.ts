@@ -9,7 +9,7 @@ export const interactDonate = async (
   destinationAddress: string,
   value: string,
 ) => {
-  const SimpleBridge = require('#artifacts/contracts/demo/Donate.sol/Donate.sol.json');
+  const Donate = require('#artifacts/contracts/demo/Donate.sol/Donate.sol.json');
 
   const [tokenName, amount] = value.split(':');
 
@@ -26,9 +26,9 @@ export const interactDonate = async (
     throw new Error('Invalid token');
   }
 
-  const bridgeAddress = config.contracts?.SimpleBridge?.address;
+  const donateAddress = config.contracts?.Donate?.address;
 
-  if (!bridgeAddress) {
+  if (!donateAddress) {
     throw new Error('Donate.sol contract not deployed yet');
   }
 
@@ -41,17 +41,17 @@ export const interactDonate = async (
   const tokenFactory = new ContractFactory(TestERC20.abi, TestERC20.bytecode, wallet);
   const tokenContract = tokenFactory.attach(tokenAddress);
 
-  let transaction = await tokenContract.approve(bridgeAddress, String(BigInt(amount) * BigInt(10 ** 18)));
+  let transaction = await tokenContract.approve(donateAddress, String(BigInt(amount) * BigInt(10 ** 18)));
   await transaction.wait();
 
   console.log('Sent allowance transaction', transaction.hash);
 
   // Do cross chain transfer
 
-  const simpleBridgeFactory = new ContractFactory(SimpleBridge.abi, SimpleBridge.bytecode, wallet);
-  const simpleBridgeContract = simpleBridgeFactory.attach(bridgeAddress);
+  const donateFactory = new ContractFactory(Donate.abi, Donate.bytecode, wallet);
+  const donateContract = donateFactory.attach(donateAddress);
 
-  transaction = await simpleBridgeContract.sendToken(
+  transaction = await donateContract.sendToken(
     destinationChain,
     tokenId,
     destinationAddress.startsWith('0x')

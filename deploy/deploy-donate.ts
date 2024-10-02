@@ -1,30 +1,31 @@
+import hre from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { deployContractEVM, getEvmCreate2Address, getWallet } from './helpers/utils';
 import { BaseContract, keccak256, ContractFactory } from 'ethers';
 import { loadConfig, printError, printInfo, prompt, saveConfig } from './helpers/basic';
 
-const contractArtifactName = 'SimpleBridge';
+const contractArtifactName = 'Donate';
 
-async function verifyDeployment(configGatewayAddress: string, contract) {
+async function verifyDeployment(configItsAddress: string, contract) {
   // Verify deployment
   let error = false;
 
-  const gatewayAddress = await contract.gateway();
+  const itsAddress = await contract.interchainTokenService();
 
-  printInfo(`Existing Gateway Address`, gatewayAddress);
+  printInfo(`Existing Gateway Address`, itsAddress);
 
-  if (configGatewayAddress !== gatewayAddress) {
-    printError(`ERROR: Retrieved Gateway address is different:`);
-    printError(`   Actual:   ${gatewayAddress}`);
-    printError(`   Expected: ${configGatewayAddress}`);
+  if (configItsAddress !== itsAddress) {
+    printError(`ERROR: Retrieved ITS address is different:`);
+    printError(`   Actual:   ${itsAddress}`);
+    printError(`   Expected: ${configItsAddress}`);
     error = true;
   }
 
   return error;
 }
 
-export default async function (hre: HardhatRuntimeEnvironment) {
-  const SimpleBridge = require('#artifacts/contracts/demo/Donate.sol.sol/Donate.sol.json');
+const main = async (hre: HardhatRuntimeEnvironment) => {
+  const Donate = require('#artifacts/contracts/donate/Donate.sol/Donate.json');
 
   const networkName = hre.network.name;
 
@@ -38,32 +39,22 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   const contractConfig = config.contracts[contractArtifactName];
 
-  const salt = 'SimpleBridge';
+  const salt = 'Donate';
   printInfo('Contract deploy salt', salt);
 
   contractConfig.deployer = wallet.address;
 
-  const gatewayAddress = config.contracts?.AxelarAmplifierGateway?.address;
+  const itsAddress = config.contracts?.InterchainTokenService?.address;
 
-  if (!gatewayAddress) {
-    throw new Error('Gateway contract not deployed yet');
+  if (!itsAddress) {
+    throw new Error('ITS contract not deployed yet');
   }
 
-  const initializeArgs = [gatewayAddress, wallet.address];
+  const initializeArgs = [wallet.address, itsAddress];
 
-  let simpleBridgeFactory = new ContractFactory(SimpleBridge.abi, SimpleBridge.bytecode, wallet);
+  let donateFactory = new ContractFactory(Donate.abi, Donate.bytecode, wallet);
 
   printInfo(`Deploy contract on EVM chain ${hre.network.name}`);
-
-  const deployerAddress = config.contracts?.ConstAddressDeployer?.address;
-
-  if (!gatewayAddress) {
-    throw new Error('Deployer contract not deployed yet');
-  }
-
-  let contractAddress = await getEvmCreate2Address(deployerAddress, wallet, SimpleBridge, salt, []);
-
-  printInfo('Donate.sol contract address', contractAddress);
 
   /// Deploying contract
 
@@ -71,7 +62,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   if (contractConfig.address) {
     printInfo('Donate.sol contract already exists in config, not redeploying...');
 
-    contract = simpleBridgeFactory.attach(contractConfig.address);
+    contract = donateFactory.attach(contractConfig.address);
   } else {
     if (prompt(`Do you want to proceed with deployment? (double check everything first!)`)) {
       return;
@@ -83,17 +74,15 @@ export default async function (hre: HardhatRuntimeEnvironment) {
       hre,
       contractArtifactName,
       salt,
-      SimpleBridge,
-      config.contracts.ConstAddressDeployer.address,
+      Donate,
       initializeArgs,
       {
         wallet,
-        proxy: true,
       },
     );
   }
 
-  contractAddress = await contract.getAddress();
+  const contractAddress = await contract.getAddress();
 
   printInfo('Donate.sol Address', contractAddress);
 
@@ -101,7 +90,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   const codehash = Buffer.from(keccak256(deployedCode)).toString('hex');
   printInfo('Codehash', codehash);
 
-  let error = await verifyDeployment(gatewayAddress, contract);
+  let error = await verifyDeployment(itsAddress, contract);
 
   if (error) {
     printError('Deployment status', 'FAILED');
@@ -114,13 +103,24 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   printInfo('Deployment status', 'SUCCESS');
 
-  if (contractConfig?.knownChains) {
-    for (const chainName in contractConfig.knownChains) {
-      const chainAddress = contractConfig.knownChains[chainName];
+  if (contractConfig?.knownCharities) {
+    for (const charityName in contractConfig.knownCharities) {
+      const chainAddress = contractConfig.knownCharities[charityName];
 
-      printInfo(`Adding known chain ${chainName}`, chainAddress);
+      printInfo(`Adding known charity ${charityName}`, chainAddress);
 
-      const transaction = await contract.addKnownChain(chainName, chainAddress);
+      const transaction = await contract.addKnownCharity(charityName, chainAddress);
+      await transaction.wait();
+
+      console.log('Sent transaction', transaction.hash);
+    }
+  }
+
+  if (contractConfig?.analyticTokens) {
+    for (const tokenAddress of contractConfig.analyticTokens) {
+      printInfo(`Adding analytic token`, tokenAddress);
+
+      const transaction = await contract.addAnalyticsToken(tokenAddress);
       await transaction.wait();
 
       console.log('Sent transaction', transaction.hash);
@@ -129,3 +129,5 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   saveConfig(config, networkName);
 }
+
+main(hre).catch(console.error);

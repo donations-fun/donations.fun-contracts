@@ -5,13 +5,12 @@
     },
     "Donate": {
       "knownCharities": {
-        "first-charity": "0x322Ff96091A8297AB3A7847761b40eD5230d5a3c",
-        "second-charity": "0x693854A42cCc3016ec7F167D720cDf46c51F5fca"
+        "third-charity": "0x693854A42cCc3016ec7F167D720cDf46c51F5fca"
       },
       "analyticTokens": [
-        "0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846"
+        "0xE4aB69C077896252FAFBD49EFD26B5D171A32410"
       ],
-      "address": "0xcC2C1c88B099e9d02D8c941c7a3d1232335a9940",
+      "address": "0x6E01Eed9f11838c98a10289E006321283fE5c564",
       "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
       "deploymentMethod": "create2",
       "salt": "Donate"

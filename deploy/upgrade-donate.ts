@@ -1,9 +1,11 @@
+import hre from 'hardhat';
+
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getWallet, upgradeContractEVM } from './helpers/utils';
 import { keccak256 } from 'ethers';
 import { loadConfig, printError, printInfo, prompt, saveConfig } from './helpers/basic';
 
-const contractArtifactName = 'SimpleBridge';
+const contractArtifactName = 'Donate';
 
 async function verifyDeployment(configInterchainTokenServiceAddress: string, contract) {
   // Verify deployment
@@ -23,8 +25,8 @@ async function verifyDeployment(configInterchainTokenServiceAddress: string, con
   return error;
 }
 
-export default async function (hre: HardhatRuntimeEnvironment) {
-  const SimpleBridge = require('#artifacts/contracts/demo/Donate.sol.sol/Donate.sol.json');
+const main = async (hre: HardhatRuntimeEnvironment) => {
+  const Donate = require('#artifacts/contracts/donate/Donate.sol/Donate.json');
 
   const networkName = hre.network.name;
 
@@ -50,7 +52,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     throw new Error('Contract proxy not yet deployed');
   }
 
-  const reinitializeArgs = [interchainTokenService];
+  const reinitializeArgs = [];
 
   printInfo('Donate.sol proxy contract address', proxyAddress);
 
@@ -66,7 +68,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     hre,
     contractArtifactName,
     proxyAddress,
-    SimpleBridge,
+    Donate,
     reinitializeArgs,
     {
       wallet,
@@ -95,3 +97,5 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
   saveConfig(config, networkName);
 }
+
+main(hre).catch(console.error);

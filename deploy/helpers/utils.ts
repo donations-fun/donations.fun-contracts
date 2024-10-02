@@ -1,4 +1,4 @@
-import { Contract, ContractFactory, ethers, Interface, Wallet, Provider } from 'ethers';
+import { Contract, ContractFactory, ethers, Interface, Wallet, Provider, getCreate2Address, keccak256 } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getSaltFromKey } from './basic';
 
@@ -36,7 +36,7 @@ export const getProvider = (hre) => {
 export const getWallet = (hre, privateKey?: string) => {
   if (!privateKey) {
     // Get wallet private key from .env file
-    if (!process.env.WALLET_PRIVATE_KEY) throw "⛔️ Wallet private key wasn't found in .env file!";
+    if (!process.env.WALLET_PRIVATE_KEY) throw '⛔️ Wallet private key wasn\'t found in .env file!';
   }
 
   const provider = getProvider(hre);
@@ -49,7 +49,7 @@ export const verifyEnoughBalance = async (wallet: Wallet, amount: bigint) => {
   const balance = await wallet.getBalance();
   if (balance < amount)
     throw `⛔️ Wallet balance is too low! Required ${ethers.formatEther(amount)} ETH, but current ${wallet.address} balance is ${ethers.formatEther(
-      balance
+      balance,
     )} ETH`;
 };
 
@@ -63,7 +63,7 @@ export const verifyContract = async (
     contract: string;
     constructorArguments: string;
     bytecode: string;
-  }
+  },
 ) => {
   const verificationRequestId: number = await hre.run('verify:verify', {
     ...data,
@@ -85,14 +85,9 @@ type DeployContractOptions = {
    */
   silent?: boolean;
   /**
-   * If true, the contract will not be verified on Block Explorer
-   */
-  noVerify?: boolean;
-  /**
    * If specified, the contract will be deployed using this wallet
    */
   wallet?: Wallet;
-  proxy?: boolean;
 };
 
 export const deployContractEVM = async (
@@ -100,9 +95,8 @@ export const deployContractEVM = async (
   contractArtifactName: string,
   saltKey: string,
   contractJson: any,
-  deployerAddress: string,
   constructorArguments?: any[],
-  options?: DeployContractOptions
+  options?: DeployContractOptions,
 ) => {
   const log = (message: string) => {
     if (!options?.silent) console.log(message);
@@ -112,35 +106,16 @@ export const deployContractEVM = async (
 
   const wallet = options?.wallet ?? getWallet(hre);
 
-  const deployer = new Contract(deployerAddress, IDeployer, wallet);
   const salt = getSaltFromKey(saltKey);
   const factory = new ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
 
-  let contract;
-  if (!options.proxy) {
-    const bytecode = (await factory.getDeployTransaction(...constructorArguments)).data;
+  let contract = await hre.upgrades.deployProxy(factory, constructorArguments, {
+    initializer: 'initialize',
+    salt: getSaltFromKey(salt),
+  });
+  await contract.waitForDeployment();
 
-    const tx = await deployer.deploy(bytecode, salt);
-    await tx.wait();
-
-    const contractAddress = await deployer.deployedAddress(bytecode, wallet.address, salt);
-    contract = factory.attach(contractAddress);
-
-    const constructorArgs = contract.interface.encodeDeploy(constructorArguments);
-
-    // Display contract deployment info
-    log(`\n"${contractArtifactName}" was successfully deployed:`);
-    log(` - Contract address: ${contractAddress}`);
-    log(` - Encoded constructor arguments: ${constructorArgs}\n`);
-  } else {
-    contract = await hre.upgrades.deployProxy(factory, constructorArguments, {
-      initializer: 'initialize',
-      salt: getSaltFromKey(salt),
-    });
-    await contract.waitForDeployment();
-
-    log(`\n"${contractArtifactName}" was successfully deployed:`);
-  }
+  log(`\n"${contractArtifactName}" was successfully deployed:`);
 
   return contract;
 };
@@ -151,7 +126,7 @@ export const upgradeContractEVM = async (
   proxyAddress: string,
   contractJson: any,
   reinitializeArguments?: any[],
-  options?: DeployContractOptions
+  options?: DeployContractOptions,
 ) => {
   const log = (message: string) => {
     if (!options?.silent) console.log(message);
@@ -167,21 +142,11 @@ export const upgradeContractEVM = async (
     call: {
       fn: 'reinitialize',
       args: reinitializeArguments,
-    }
+    },
   });
   await contract.waitForDeployment();
 
   log(`\n"${contractArtifactName}" was successfully upgraded:`);
 
   return contract;
-};
-
-export const getEvmCreate2Address = async (deployerAddress, wallet, contractJson, key, args = []) => {
-  const deployer = new Contract(deployerAddress, IDeployer, wallet);
-  const salt = getSaltFromKey(key);
-
-  const factory = new ContractFactory(contractJson.abi, contractJson.bytecode);
-  const bytecode = (await factory.getDeployTransaction(...args)).data;
-
-  return await deployer.deployedAddress(bytecode, wallet.address, salt);
 };
