@@ -1,0 +1,43 @@
+{
+  "contracts": {
+    "AxelarAmplifierGateway": {
+      "address": "erd1qqqqqqqqqqqqqpgqvkhh6ex5m0sl0rgxn5790ljsscye0r48kkls7hrlaw"
+    },
+    "SimpleBridge": {
+      "knownChains": {
+        "zkstack-memento": "0x4f8bf357E0c936BbA6b7dfCE9B7B2d628E5390d4",
+        "avalanche-fuji": "0x94EC28e6Fceb5B3ce1AFb316520a03487b5dE027"
+      },
+      "address": "erd1qqqqqqqqqqqqqpgqs7dvq9e4cp9gysnrxhprhnp4z5yx93s6kklspuc0wg",
+      "deployer": "erd1wavgcxq9tfyrw49k3s3h34085mayu82wqvpd4h6akyh8559pkklsknwhwh"
+    }
+  },
+  "tokens": {
+    "WrappedTestMemento": {
+      "tokenId": "47a73af03e892b97d22f0f6fc8d7b6e901d7fbadea01eb88596fe6e5eefc96a3",
+      "symbol": "WTMM",
+      "initialSupply": "0",
+      "isWrapped": true,
+      "identifier": "WTMM-d5aa89",
+      "deployer": "erd1wavgcxq9tfyrw49k3s3h34085mayu82wqvpd4h6akyh8559pkklsknwhwh",
+      "rolesSet": true
+    },
+    "WrappedTestFantom": {
+      "tokenId": "fd3282c122c6c14b1eccebcb1743d5c55e15b2b2426c1aca9fda66db269e8cc6",
+      "symbol": "WTFM",
+      "initialSupply": "0",
+      "isWrapped": true,
+      "identifier": "TFM-30de7b",
+      "deployer": "erd1wavgcxq9tfyrw49k3s3h34085mayu82wqvpd4h6akyh8559pkklsknwhwh",
+      "rolesSet": true
+    },
+    "EGLD": {
+      "tokenId": "92d2f69abadfa21b47778d7881632174cf04662182b3500c28cdbccbab814faf",
+      "symbol": "EGLD",
+      "initialSupply": "0",
+      "isWrapped": false,
+      "identifier": "EGLD",
+      "deployer": "erd1wavgcxq9tfyrw49k3s3h34085mayu82wqvpd4h6akyh8559pkklsknwhwh"
+    }
+  }
+}

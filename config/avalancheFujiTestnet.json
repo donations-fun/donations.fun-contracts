@@ -1,0 +1,68 @@
+{
+  "contracts": {
+    "AxelarAmplifierGateway": {
+      "address": "0xF128c84c3326727c3e155168daAa4C0156B87AD1"
+    },
+    "ConstAddressDeployer": {
+      "address": "0x98B2920D53612483F91F12Ed7754E51b4A77919e"
+    },
+    "InterchainTokenService": {
+      "address": "0x144c3d7A5f5198EF3B46A8258b35E903cf197A66"
+    },
+    "SimpleBridge": {
+      "knownChains": {
+        "zkstack-memento": "0x4f8bf357E0c936BbA6b7dfCE9B7B2d628E5390d4",
+        "multiversx": "erd1qqqqqqqqqqqqqpgqs7dvq9e4cp9gysnrxhprhnp4z5yx93s6kklspuc0wg"
+      },
+      "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
+      "address": "0x94EC28e6Fceb5B3ce1AFb316520a03487b5dE027",
+      "deploymentMethod": "create2",
+      "salt": "SimpleBridge"
+    }
+  },
+  "tokens": {
+    "WrappedTestMemento": {
+      "tokenId": "0x47a73af03e892b97d22f0f6fc8d7b6e901d7fbadea01eb88596fe6e5eefc96a3",
+      "symbol": "WTMM",
+      "initialSupply": "0",
+      "isWrapped": true,
+      "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
+      "address": "0x541a9257494bCf6aA68e57C1512682bF323daC9E",
+      "deploymentMethod": "create2",
+      "salt": "TestERC20 WrappedTestMemento"
+    },
+    "TestFantom": {
+      "tokenId": "0xfd3282c122c6c14b1eccebcb1743d5c55e15b2b2426c1aca9fda66db269e8cc6",
+      "symbol": "TFM",
+      "initialSupply": "5000",
+      "isWrapped": false,
+      "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
+      "address": "0x148FB106ad3ccA29d5bB62841dF679d54AF3dda4",
+      "deploymentMethod": "create2",
+      "salt": "TestERC20 TestFantom"
+    },
+    "WrappedEgld": {
+      "tokenId": "0x92d2f69abadfa21b47778d7881632174cf04662182b3500c28cdbccbab814faf",
+      "symbol": "WEGLD",
+      "initialSupply": "0",
+      "isWrapped": true,
+      "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
+      "address": "0xBE179C7600D525Af7CD55902420F687D7d09B1F3",
+      "deploymentMethod": "create2",
+      "salt": "TestERC20 WrappedEgld"
+    },
+    "NativeBurnableMemento": {
+      "tokenId": "0xa1473786774b99e11bddc92f1f56ece598dadffb5a79c2da3238ff2f4b193c35",
+      "symbol": "NBM",
+      "initialSupply": "0",
+      "isWrapped": true,
+      "crossChainAdmins": [
+        "0xd70f1f241568f32BDC29A8dfFd3a19d00dd0e272"
+      ],
+      "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
+      "address": "0x630e30D5e557d1dBD39c5F0630462Fe1AA69b8Fa",
+      "deploymentMethod": "create2",
+      "salt": "TestERC20 NativeBurnableMemento"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+[package]
+name = "donate-meta"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies.donate]
+path = ".."
+
+[dependencies.multiversx-sc-meta]
+version = "0.52.3"
