@@ -28,7 +28,7 @@ program.command('deploy-donate').action(async () => {
 
   let contract: Contract;
   if (contractConfig.address) {
-    printInfo('Donate.sol contract already exists in config, not redeploying...');
+    printInfo('Donate contract already exists in config, not redeploying...');
 
     contract = world.newContract(contractConfig.address);
   } else {
@@ -36,7 +36,7 @@ program.command('deploy-donate').action(async () => {
       return;
     }
 
-    printInfo('Deploying Donate.sol contract...');
+    printInfo('Deploying Donate contract...');
 
     const result = await wallet.deployContract({
       code: 'file:./multiversx/output/donate.wasm',
@@ -52,7 +52,7 @@ program.command('deploy-donate').action(async () => {
     contract = world.newContract(result.contract.toString());
   }
 
-  printInfo('Donate.sol Address', contract.toString());
+  printInfo('Donate Address', contract.toString());
 
   contractConfig.address = contract.toString();
 

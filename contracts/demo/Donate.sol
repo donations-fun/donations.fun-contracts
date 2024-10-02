@@ -1,170 +1,170 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {AxelarGMPExecutable} from "../executable/AxelarGMPExecutable.sol";
 import {InterchainTokenExecutable} from "../executable/InterchainTokenExecutable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract Donate is AxelarGMPExecutable, Initializable, UUPSUpgradeable, OwnableUpgradeable, InterchainTokenExecutable {
+contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, InterchainTokenExecutable {
     using BytesLib for bytes;
 
-    enum TokenType {
-        LockUnlock,
-        MintBurn
+    struct TokenAnalytic {
+        address token;
+        uint256 amount;
     }
 
-    struct KnownToken {
-        address tokenAddress;
-        TokenType tokenType;
-    }
+    mapping(bytes32 => address) public knownCharities;
+    mapping(address => bool) public analyticsTokens;
+    mapping(address => TokenAnalytic[]) public addressAnalytics;
 
-    mapping(bytes32 => KnownToken) public knownTokens;
-    mapping(string => string) public knownChainsAddresses;
-    mapping(string => string) public knownChainsNames;
-
-    address public interchainTokenService;
-
-    function initialize(address _gateway, address _owner) public initializer {
+    function initialize(address _owner, address _interchainTokenService) public initializer {
         _transferOwnership(_owner);
         __UUPSUpgradeable_init();
 
-        gatewayAddress = _gateway;
-    }
-
-    function reinitialize(address _interchainTokenService) public reinitializer(2) {
         interchainTokenService = _interchainTokenService;
     }
 
-    event TokenSent(
-        address indexed sender,
-        string destinationChain,
-        bytes receiverAddress,
-        bytes32 indexed tokenId,
-        address token,
+    // For the future if upgrading and need to change initialize parameters
+    // function reinitialize() public reinitializer(2) {}
+
+    event AddKnownCharity(
+        bytes32 indexed charityId,
+        string charityName,
+        address indexed charityAddress
+    );
+
+    event RemoveKnownCharity(
+        bytes32 indexed charityId,
+        string charityName,
+        address indexed charityAddress
+    );
+
+    event AddAnalyticToken(
+        address indexed token
+    );
+
+    event RemoveAnalyticToken(
+        address indexed token
+    );
+
+    event Donation(
+        address indexed user,
+        address indexed token,
+        bytes32 indexed charityId,
+        string charityName,
         uint256 amount
     );
 
-    event TokenReceived(
-        address indexed receiver,
-        string sourceChain,
-        bytes32 indexed tokenId,
-        address token,
-        uint256 amount
+    struct CrossChainData {
+        string sourceChain;
+        bytes sourceAddress;
+    }
+
+    event DonationCrosschain(
+        address indexed user, // can be zero address
+        address indexed token,
+        bytes32 indexed charityId,
+        uint256 amount,
+        CrossChainData data
     );
 
-    function addKnownToken(bytes32 tokenId, address tokenAddress, TokenType tokenType) external onlyOwner {
-        knownTokens[tokenId] = KnownToken(tokenAddress, tokenType);
+    function addKnownCharity(string calldata charityName, address charityAddress) external onlyOwner {
+        bytes32 charityId = keccak256(abi.encodePacked(charityName));
+
+        knownCharities[charityId] = charityAddress;
+
+        emit AddKnownCharity(charityId, charityName, charityAddress);
     }
 
-    function removeKnownToken(bytes32 tokenId) external onlyOwner {
-        delete knownTokens[tokenId];
+    function removeKnownCharity(string calldata charityName) external onlyOwner {
+        bytes32 charityId = keccak256(abi.encodePacked(charityName));
+
+        address charityAddress = knownCharities[charityId];
+
+        delete knownCharities[charityId];
+
+        emit RemoveKnownCharity(charityId, charityName, charityAddress);
     }
 
-    function addKnownChain(string calldata chainName, string calldata chainAddress) external onlyOwner {
-        knownChainsAddresses[chainName] = chainAddress;
-        knownChainsNames[chainAddress] = chainName;
+    function addAnalyticsToken(address tokenAddress) external onlyOwner {
+        analyticsTokens[tokenAddress] = true;
+
+        emit AddAnalyticToken(tokenAddress);
     }
 
-    function removeKnownChain(string calldata chainName) external onlyOwner {
-        string memory chainAddress = knownChainsAddresses[chainName];
+    function removeAnalyticToken(address tokenAddress) external onlyOwner {
+        delete analyticsTokens[tokenAddress];
 
-        delete knownChainsNames[chainAddress];
-        delete knownChainsAddresses[chainName];
+        emit RemoveAnalyticToken(tokenAddress);
     }
 
-    function sendToken(
-        string calldata destinationChain,
-        bytes32 tokenId,
-        bytes calldata receiverAddress,
-        uint256 amount
-    ) external payable {
-        string memory destinationAddress = knownChainsAddresses[destinationChain];
+    function donate(string calldata charityName, address token, uint256 amount) external payable {
+        bytes32 charityId = keccak256(abi.encodePacked(charityName));
+        address user = msg.sender;
 
-        require(bytes(destinationAddress).length > 0);
+        address charityAddress = _donate(user, charityId, token, amount);
 
-        KnownToken memory knownToken = checkKnownToken(tokenId, amount);
+        IERC20(token).transferFrom(user, charityAddress, amount);
 
-        IERC20(knownToken.tokenAddress).transferFrom(msg.sender, address(this), amount);
-
-        if (knownToken.tokenType == TokenType.MintBurn) {
-//            TestERC20(knownToken.tokenAddress).burn(amount);
-        }
-
-        // Use encodePacked so it is easier to decode on another chain without abi support
-        bytes memory payload = abi.encodePacked(tokenId, amount, receiverAddress);
-
-        gateway().callContract(destinationChain, destinationAddress, payload);
-
-        emit TokenSent(msg.sender, destinationChain, receiverAddress, tokenId, knownToken.tokenAddress, amount);
+        emit Donation(user, token, charityId, charityName, amount);
     }
 
-    function _execute(
-        bytes32,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) internal override {
-        string memory sourceChainName = knownChainsNames[sourceAddress];
-
-        require(bytes(sourceChainName).length > 0);
-
-        // Decodes the encodePacked encoded payload, which should be easy to create from other chains without abi support
-        bytes32 tokenId = payload.toBytes32(0);
-        uint256 amount = payload.toUint256(32);
-        address receiver = payload.toAddress(64);
-
-        KnownToken memory knownToken = checkKnownToken(tokenId, amount);
-
-        if (knownToken.tokenType == TokenType.MintBurn) {
-//            TestERC20(knownToken.tokenAddress).mint(amount);
-        }
-
-        IERC20(knownToken.tokenAddress).transfer(receiver, amount);
-
-        emit TokenReceived(receiver, sourceChain, tokenId, knownToken.tokenAddress, amount);
-    }
-
-    function checkKnownToken(bytes32 tokenId, uint256 amount) view internal returns (KnownToken memory) {
-        KnownToken memory knownToken = knownTokens[tokenId];
-
-        require(knownToken.tokenAddress != address(0));
-        require(amount > 0);
-
-        return knownToken;
-    }
-
-    function _authorizeUpgrade(address) internal override onlyOwner {}
+    // Implement donateForOther that accept a user as the argument?
 
     function _executeWithInterchainToken(
         bytes32, // commandId
         string calldata sourceChain,
-        bytes calldata, // sourceAddress,
+        bytes calldata sourceAddress,
         bytes calldata payload,
         bytes32, // itsTokenId
         address token,
         uint256 amount
     ) override internal virtual {
         // Decodes the encodePacked encoded payload, which should be easy to create from other chains without abi support
-        bytes32 tokenId = payload.toBytes32(0);
-        uint256 newAmount = payload.toUint256(32);
-        address receiver = payload.toAddress(64);
+        bytes32 charityId = payload.toBytes32(0);
+        address user = payload.toAddress(32); // can be zero address
 
-        require(amount == newAmount);
+        address charityAddress = _donate(user, charityId, token, amount);
 
-        KnownToken memory knownToken = checkKnownToken(tokenId, amount);
+        IERC20(token).transfer(charityAddress, amount);
 
-        require(knownToken.tokenAddress == token);
+        CrossChainData memory data = CrossChainData(sourceChain, sourceAddress);
 
-        IERC20(token).transfer(receiver, amount);
-
-        emit TokenReceived(receiver, sourceChain, tokenId, knownToken.tokenAddress, amount);
+        emit DonationCrosschain(user, token, charityId, amount, data);
     }
 
-    function _getInterchainTokenService() override internal virtual returns (address) {
-        return interchainTokenService;
+    function _donate(address user, bytes32 charityId, address token, uint256 amount) internal returns (address) {
+        address charityAddress = knownCharities[charityId];
+
+        require(charityAddress != address(0), "charity does not exist");
+        require(amount > 0, "Donation amount must be greater than zero");
+
+        if (user != address(0) && analyticsTokens[token]) {
+            TokenAnalytic[] storage analytics = addressAnalytics[user];
+
+            bool tokenFound = false;
+
+            for (uint i = 0; i < analytics.length; i++) {
+                if (analytics[i].token == token) {
+                    analytics[i].amount += amount;
+                    tokenFound = true;
+                    break;
+                }
+            }
+
+            if (!tokenFound) {
+                analytics.push(TokenAnalytic({
+                    token: token,
+                    amount: amount
+                }));
+            }
+        }
+
+        return charityAddress;
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }

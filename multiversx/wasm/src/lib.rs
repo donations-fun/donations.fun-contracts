@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           10
+// Endpoints:                            1
 // Async Callback (empty):               1
-// Total number of exported functions:  13
+// Total number of exported functions:   4
 
 #![no_std]
 
@@ -20,16 +20,7 @@ multiversx_sc_wasm_adapter::endpoints! {
     (
         init => init
         upgrade => upgrade
-        addKnownToken => add_known_token
-        removeKnownToken => remove_known_token
-        addKnownChain => add_known_chain
-        removeKnownChain => remove_known_chain
-        sendToken => send_token
-        execute => execute
         gateway => gateway
-        known_tokens => known_tokens
-        known_chains_addresses => known_chains_addresses
-        known_chains_names => known_chains_names
     )
 }
 

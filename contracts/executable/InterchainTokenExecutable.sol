@@ -15,7 +15,7 @@ import { IInterchainTokenExecutable } from '../interfaces/IInterchainTokenExecut
 abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
     error NotService(address caller);
 
-//    address public interchainTokenService;
+    address public interchainTokenService;
 
     bytes32 internal constant EXECUTE_SUCCESS = keccak256('its-execute-success');
 
@@ -31,7 +31,7 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
      * Modifier to restrict function execution to the interchain token service.
      */
     modifier onlyService() {
-        if (msg.sender != _getInterchainTokenService()) revert NotService(msg.sender);
+        if (msg.sender != interchainTokenService) revert NotService(msg.sender);
         _;
     }
 
@@ -80,6 +80,4 @@ abstract contract InterchainTokenExecutable is IInterchainTokenExecutable {
         address token,
         uint256 amount
     ) internal virtual;
-
-    function _getInterchainTokenService() internal virtual returns (address);
 }
