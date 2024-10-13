@@ -95,7 +95,7 @@ export const deployContractEVM = async (
   contractArtifactName: string,
   saltKey: string,
   contractJson: any,
-  constructorArguments?: any[],
+  initializeArgs?: any[],
   options?: DeployContractOptions,
 ) => {
   const log = (message: string) => {
@@ -109,7 +109,7 @@ export const deployContractEVM = async (
   const salt = getSaltFromKey(saltKey);
   const factory = new ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
 
-  let contract = await hre.upgrades.deployProxy(factory, constructorArguments, {
+  let contract = await hre.upgrades.deployProxy(factory, initializeArgs, {
     initializer: 'initialize',
     salt: getSaltFromKey(salt),
   });
@@ -125,6 +125,7 @@ export const upgradeContractEVM = async (
   contractArtifactName: string,
   proxyAddress: string,
   contractJson: any,
+  oldContractJson: any | null,
   reinitializeArguments?: any[],
   options?: DeployContractOptions,
 ) => {
@@ -136,8 +137,12 @@ export const upgradeContractEVM = async (
 
   const wallet = options?.wallet ?? getWallet(hre);
 
-  const factory = new ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
+  if (oldContractJson) {
+    const oldFactory = new ContractFactory(oldContractJson.abi, oldContractJson.bytecode, wallet);
+    await hre.upgrades.forceImport(proxyAddress, oldFactory);
+  }
 
+  const factory = new ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
   let contract = await hre.upgrades.upgradeProxy(proxyAddress, factory, {
     call: {
       fn: 'reinitialize',

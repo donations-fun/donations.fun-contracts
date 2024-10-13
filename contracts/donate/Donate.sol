@@ -3,13 +3,16 @@ pragma solidity ^0.8.0;
 
 import {InterchainTokenExecutable} from "../executable/InterchainTokenExecutable.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import {IInterchainTokenService} from "../interfaces/IInterchainTokenService.sol";
 
 contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, InterchainTokenExecutable {
     using BytesLib for bytes;
+    using SafeERC20 for IERC20;
 
     struct TokenAnalytic {
         address token;
@@ -19,6 +22,7 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
     mapping(bytes32 => address) public knownCharities;
     mapping(address => bool) public analyticsTokens;
     mapping(address => TokenAnalytic[]) public addressAnalytics;
+    mapping(bytes32 => bytes) public knownCharitiesInterchain;
 
     function initialize(address _owner, address _interchainTokenService) public initializer {
         _transferOwnership(_owner);
@@ -28,7 +32,7 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
     }
 
     // For the future if upgrading and need to change initialize parameters
-    // function reinitialize() public reinitializer(2) {}
+    function reinitialize() public reinitializer(2) {}
 
     event AddKnownCharity(
         bytes32 indexed charityId,
@@ -40,6 +44,18 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         bytes32 indexed charityId,
         string charityName,
         address indexed charityAddress
+    );
+
+    event AddKnownCharityInterchain(
+        bytes32 indexed charityId,
+        string charityName,
+        bytes charityAddress
+    );
+
+    event RemoveKnownCharityInterchain(
+        bytes32 indexed charityId,
+        string charityName,
+        bytes charityAddress
     );
 
     event AddAnalyticToken(
@@ -71,6 +87,20 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         CrossChainData data
     );
 
+    struct InterchainData {
+        bytes32 tokenId;
+        string destinationChain;
+    }
+
+    event DonationInterchain(
+        address indexed user,
+        address indexed token,
+        bytes32 indexed charityId,
+        string charityName,
+        uint256 amount,
+        InterchainData data
+    );
+
     function addKnownCharity(string calldata charityName, address charityAddress) external onlyOwner {
         bytes32 charityId = keccak256(abi.encodePacked(charityName));
 
@@ -87,6 +117,24 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         delete knownCharities[charityId];
 
         emit RemoveKnownCharity(charityId, charityName, charityAddress);
+    }
+
+    function addKnownCharityInterchain(string calldata charityName, bytes calldata charityAddress) external onlyOwner {
+        bytes32 charityId = keccak256(abi.encodePacked(charityName));
+
+        knownCharitiesInterchain[charityId] = charityAddress;
+
+        emit AddKnownCharityInterchain(charityId, charityName, charityAddress);
+    }
+
+    function removeKnownCharityInterchain(string calldata charityName) external onlyOwner {
+        bytes32 charityId = keccak256(abi.encodePacked(charityName));
+
+        bytes memory charityAddress = knownCharitiesInterchain[charityId];
+
+        delete knownCharitiesInterchain[charityId];
+
+        emit RemoveKnownCharityInterchain(charityId, charityName, charityAddress);
     }
 
     function addAnalyticsToken(address tokenAddress) external onlyOwner {
@@ -107,9 +155,41 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
 
         address charityAddress = _donate(user, charityId, token, amount);
 
-        IERC20(token).transferFrom(user, charityAddress, amount);
+        IERC20(token).safeTransferFrom(user, charityAddress, amount);
 
         emit Donation(user, token, charityId, charityName, amount);
+    }
+
+    function donateInterchain(
+        string calldata charityName,
+        address token,
+        uint256 amount,
+        bytes32 tokenId,
+        string calldata destinationChain
+    ) external payable {
+        bytes32 charityId = keccak256(abi.encodePacked(charityName));
+        address user = msg.sender;
+
+        bytes storage charityAddress = _donateInterchain(user, charityId, token, amount);
+
+        IERC20 tokenInterface = IERC20(token);
+
+        tokenInterface.safeTransferFrom(user, address(this), amount);
+        tokenInterface.approve(interchainTokenService, amount);
+
+        IInterchainTokenService(interchainTokenService)
+            .interchainTransfer{ value: msg.value }(
+                tokenId,
+                destinationChain,
+                charityAddress,
+                amount,
+                "",
+                msg.value
+            );
+
+        InterchainData memory data = InterchainData(tokenId, destinationChain);
+
+        emit DonationInterchain(user, token, charityId, charityName, amount, data);
     }
 
     // Implement donateForOther that accept a user as the argument?
@@ -129,7 +209,7 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
 
         address charityAddress = _donate(user, charityId, token, amount);
 
-        IERC20(token).transfer(charityAddress, amount);
+        IERC20(token).safeTransfer(charityAddress, amount);
 
         CrossChainData memory data = CrossChainData(sourceChain, sourceAddress);
 
@@ -142,6 +222,23 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         require(charityAddress != address(0), "charity does not exist");
         require(amount > 0, "Donation amount must be greater than zero");
 
+        _handleAnalytics(user, token, amount);
+
+        return charityAddress;
+    }
+
+    function _donateInterchain(address user, bytes32 charityId, address token, uint256 amount) internal returns (bytes storage) {
+        bytes storage charityAddress = knownCharitiesInterchain[charityId];
+
+        require(charityAddress.length > 0, "charity does not exist");
+        require(amount > 0, "Donation amount must be greater than zero");
+
+        _handleAnalytics(user, token, amount);
+
+        return charityAddress;
+    }
+
+    function _handleAnalytics(address user, address token, uint256 amount) internal {
         if (user != address(0) && analyticsTokens[token]) {
             TokenAnalytic[] storage analytics = addressAnalytics[user];
 
@@ -162,8 +259,6 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
                 }));
             }
         }
-
-        return charityAddress;
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
