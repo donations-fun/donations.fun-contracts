@@ -4,6 +4,3 @@ cache/
 
 .env
 era_test_node.log
-
-.openzeppelin/
-.upgradable/
