@@ -21,6 +21,12 @@ and if the appropriate values are set in it (for verification) or if the address
 
 `npm run upgrade:donate -- --network optimismSepolia`
 
+### Management functions
+
+`npm run deploy:donate:add-known-charities-interchain`
+
+`npm run deploy:donate:add-known-charities-interchain -- --network optimismSepolia`
+
 ### Sending tokens cross chain
 
 `npm run interact:donate:to-optimism -- --value TestMemento:1` - send 1 TestMemento from Avalanche to Optimism Sepolia

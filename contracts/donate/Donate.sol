@@ -22,7 +22,7 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
     mapping(bytes32 => address) public knownCharities;
     mapping(address => bool) public analyticsTokens;
     mapping(address => TokenAnalytic[]) public addressAnalytics;
-    mapping(bytes32 => bytes) public knownCharitiesInterchain;
+    mapping(bytes32 => KnownCharityInterchain) public knownCharitiesInterchain;
 
     function initialize(address _owner, address _interchainTokenService) public initializer {
         _transferOwnership(_owner);
@@ -32,7 +32,7 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
     }
 
     // For the future if upgrading and need to change initialize parameters
-    function reinitialize() public reinitializer(2) {}
+    function reinitialize() public reinitializer(3) {}
 
     event AddKnownCharity(
         bytes32 indexed charityId,
@@ -49,12 +49,14 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
     event AddKnownCharityInterchain(
         bytes32 indexed charityId,
         string charityName,
+        string destinationChain,
         bytes charityAddress
     );
 
     event RemoveKnownCharityInterchain(
         bytes32 indexed charityId,
         string charityName,
+        string destinationChain,
         bytes charityAddress
     );
 
@@ -101,8 +103,16 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         InterchainData data
     );
 
+    struct KnownCharityInterchain {
+        string destinationChain;
+        bytes charityAddress;
+    }
+
     function addKnownCharity(string calldata charityName, address charityAddress) external onlyOwner {
         bytes32 charityId = keccak256(abi.encodePacked(charityName));
+
+        // Do not allow to have the same charity both as native and as interchain
+        require(knownCharitiesInterchain[charityId].charityAddress.length == 0, "charity already known interchain");
 
         knownCharities[charityId] = charityAddress;
 
@@ -119,22 +129,25 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         emit RemoveKnownCharity(charityId, charityName, charityAddress);
     }
 
-    function addKnownCharityInterchain(string calldata charityName, bytes calldata charityAddress) external onlyOwner {
+    function addKnownCharityInterchain(string calldata charityName, string calldata destinationChain, bytes calldata charityAddress) external onlyOwner {
         bytes32 charityId = keccak256(abi.encodePacked(charityName));
 
-        knownCharitiesInterchain[charityId] = charityAddress;
+        // Do not allow to have the same charity both as native and as interchain
+        require(knownCharities[charityId] == address(0), "charity already known");
 
-        emit AddKnownCharityInterchain(charityId, charityName, charityAddress);
+        knownCharitiesInterchain[charityId] = KnownCharityInterchain(destinationChain, charityAddress);
+
+        emit AddKnownCharityInterchain(charityId, charityName, destinationChain, charityAddress);
     }
 
     function removeKnownCharityInterchain(string calldata charityName) external onlyOwner {
         bytes32 charityId = keccak256(abi.encodePacked(charityName));
 
-        bytes memory charityAddress = knownCharitiesInterchain[charityId];
+        KnownCharityInterchain memory knownCharityInterchain = knownCharitiesInterchain[charityId];
 
         delete knownCharitiesInterchain[charityId];
 
-        emit RemoveKnownCharityInterchain(charityId, charityName, charityAddress);
+        emit RemoveKnownCharityInterchain(charityId, charityName, knownCharityInterchain.destinationChain, knownCharityInterchain.charityAddress);
     }
 
     function addAnalyticsToken(address tokenAddress) external onlyOwner {
@@ -170,7 +183,7 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         bytes32 charityId = keccak256(abi.encodePacked(charityName));
         address user = msg.sender;
 
-        bytes storage charityAddress = _donateInterchain(user, charityId, token, amount);
+        bytes storage charityAddress = _donateInterchain(user, charityId, token, amount, destinationChain);
 
         IERC20 tokenInterface = IERC20(token);
 
@@ -178,14 +191,14 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         tokenInterface.approve(interchainTokenService, amount);
 
         IInterchainTokenService(interchainTokenService)
-            .interchainTransfer{ value: msg.value }(
-                tokenId,
-                destinationChain,
-                charityAddress,
-                amount,
-                "",
-                msg.value
-            );
+        .interchainTransfer{value: msg.value}(
+            tokenId,
+            destinationChain,
+            charityAddress,
+            amount,
+            "",
+            msg.value
+        );
 
         InterchainData memory data = InterchainData(tokenId, destinationChain);
 
@@ -227,15 +240,20 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         return charityAddress;
     }
 
-    function _donateInterchain(address user, bytes32 charityId, address token, uint256 amount) internal returns (bytes storage) {
-        bytes storage charityAddress = knownCharitiesInterchain[charityId];
+    function _donateInterchain(address user, bytes32 charityId, address token, uint256 amount, string calldata destinationChain) internal returns (bytes storage) {
+        KnownCharityInterchain storage knownCharityInterchain = knownCharitiesInterchain[charityId];
 
-        require(charityAddress.length > 0, "charity does not exist");
+        require(knownCharityInterchain.charityAddress.length > 0, "charity does not exist");
+        require(
+            keccak256(abi.encodePacked(knownCharityInterchain.destinationChain))
+                == keccak256(abi.encodePacked(destinationChain)),
+            "invalid destination chain"
+        );
         require(amount > 0, "Donation amount must be greater than zero");
 
         _handleAnalytics(user, token, amount);
 
-        return charityAddress;
+        return knownCharityInterchain.charityAddress;
     }
 
     function _handleAnalytics(address user, address token, uint256 amount) internal {

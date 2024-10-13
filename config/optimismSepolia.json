@@ -7,6 +7,12 @@
       "knownCharities": {
         "third-charity": "0x693854A42cCc3016ec7F167D720cDf46c51F5fca"
       },
+      "knownCharitiesInterchain": {
+        "other-charity": {
+          "destinationChain": "eth-sepolia",
+          "charityAddress": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC"
+        }
+      },
       "analyticTokens": [
         "0xE4aB69C077896252FAFBD49EFD26B5D171A32410"
       ],

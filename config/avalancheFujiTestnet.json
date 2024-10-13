@@ -8,6 +8,12 @@
         "first-charity": "0x322Ff96091A8297AB3A7847761b40eD5230d5a3c",
         "second-charity": "0x693854A42cCc3016ec7F167D720cDf46c51F5fca"
       },
+      "knownCharitiesInterchain": {
+        "other-charity": {
+          "destinationChain": "eth-sepolia",
+          "charityAddress": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC"
+        }
+      },
       "analyticTokens": [
         "0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846"
       ],

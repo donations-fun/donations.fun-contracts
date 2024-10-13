@@ -41,6 +41,14 @@ describe('Donate Contract', function () {
       expect(await donate.knownCharities(charityId)).to.equal(charityAddress);
     });
 
+    it('should revert if charity already known interchain', async function () {
+      await donate.addKnownCharityInterchain(charityName, 'destinationChain', charityAddress);
+
+      await expect(donate.addKnownCharity(charityName, charityAddress)).to.be.revertedWith(
+        'charity already known interchain'
+      );
+    });
+
     it('should revert if called by a non-owner', async function () {
       await expect(donate.connect(addr1).addKnownCharity(charityName, charityAddress)).to.be.revertedWith(
         'Ownable: caller is not the owner'
@@ -73,20 +81,30 @@ describe('Donate Contract', function () {
   });
 
   describe('addKnownCharityInterchain', function () {
+    const destinationChain = 'destinationChain';
+
     it('should add a known charity and emit an event', async function () {
       const charityId = keccak256(Buffer.from(charityName));
 
       // Listen for the event
-      await expect(donate.addKnownCharityInterchain(charityName, charityAddress))
+      await expect(donate.addKnownCharityInterchain(charityName, destinationChain, charityAddress))
         .to.emit(donate, 'AddKnownCharityInterchain')
-        .withArgs(charityId, charityName, charityAddress);
+        .withArgs(charityId, charityName, destinationChain, charityAddress);
 
       // Verify that the charity has been added
-      expect(await donate.knownCharitiesInterchain(charityId)).to.equal(charityAddress);
+      expect(await donate.knownCharitiesInterchain(charityId)).to.deep.equal([destinationChain, charityAddress]);
+    });
+
+    it('should revert if charity already known', async function () {
+      await donate.addKnownCharity(charityName, charityAddress);
+
+      await expect(donate.addKnownCharityInterchain(charityName, 'destinationChain', charityAddress)).to.be.revertedWith(
+        'charity already known'
+      );
     });
 
     it('should revert if called by a non-owner', async function () {
-      await expect(donate.connect(addr1).addKnownCharityInterchain(charityName, charityAddress)).to.be.revertedWith(
+      await expect(donate.connect(addr1).addKnownCharityInterchain(charityName, destinationChain, charityAddress)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       );
     });
@@ -94,19 +112,20 @@ describe('Donate Contract', function () {
 
   describe('removeKnownCharityInterchain', function () {
     const charityId = keccak256(Buffer.from(charityName));
+    const destinationChain = 'destinationChain';
 
     beforeEach(async function () {
       // Add the charity before attempting to remove it
-      await donate.addKnownCharityInterchain(charityName, charityAddress);
+      await donate.addKnownCharityInterchain(charityName, destinationChain, charityAddress);
     });
 
     it('should remove a known charity and emit an event', async function () {
       await expect(donate.removeKnownCharityInterchain(charityName))
         .to.emit(donate, 'RemoveKnownCharityInterchain')
-        .withArgs(charityId, charityName, charityAddress);
+        .withArgs(charityId, charityName, destinationChain, charityAddress);
 
       // Verify that the charity has been removed
-      expect(await donate.knownCharitiesInterchain(charityId)).to.equal('0x');
+      expect(await donate.knownCharitiesInterchain(charityId)).to.deep.equal(['', '0x']);
     });
 
     it('should revert if called by a non-owner', async function () {
@@ -201,6 +220,7 @@ describe('Donate Contract', function () {
   describe('donateInterchain', async function () {
     const donationAmount = parseUnits('10', 18); // 10 tokens
     const tokenId = keccak256(Buffer.from('tokenId'));
+    const destinationChain = 'destinationChain';
     let token;
 
     beforeEach(async function () {
@@ -209,7 +229,7 @@ describe('Donate Contract', function () {
       const Token = await ethers.getContractFactory('TestToken');
       token = await Token.deploy(initialSupply);
 
-      await donate.addKnownCharityInterchain(charityName, charityAddress);
+      await donate.addKnownCharityInterchain(charityName, destinationChain, charityAddress);
       await donate.addAnalyticsToken(await token.getAddress());
     });
 
@@ -221,14 +241,14 @@ describe('Donate Contract', function () {
       await testIts.addKnownToken(tokenId, await token.getAddress());
 
       await expect(
-        donate.donateInterchain(charityName, actualTokenAddress, donationAmount, tokenId, 'otherChain', {
+        donate.donateInterchain(charityName, actualTokenAddress, donationAmount, tokenId, destinationChain, {
           value: 1_000,
         })
       )
         .to.emit(donate, 'DonationInterchain')
         .withArgs(owner.address, actualTokenAddress, keccak256(Buffer.from(charityName)), charityName, donationAmount, [
           tokenId,
-          'otherChain',
+          destinationChain,
         ]);
 
       // TestITS will retain the balance and ether sent
@@ -243,12 +263,18 @@ describe('Donate Contract', function () {
 
     it('should revert if charity does not exist', async function () {
       await expect(
-        donate.donateInterchain('Nonexistent Charity', tokenAddress, donationAmount, tokenId, '')
+        donate.donateInterchain('Nonexistent Charity', tokenAddress, donationAmount, tokenId, destinationChain)
       ).to.be.revertedWith('charity does not exist');
     });
 
+    it('should revert if charity chain is different', async function () {
+      await expect(
+        donate.donateInterchain(charityName, tokenAddress, donationAmount, tokenId, 'otherChain')
+      ).to.be.revertedWith('invalid destination chain');
+    });
+
     it('should revert if the donation amount is zero', async function () {
-      await expect(donate.donateInterchain(charityName, tokenAddress, 0, tokenId, '')).to.be.revertedWith(
+      await expect(donate.donateInterchain(charityName, tokenAddress, 0, tokenId, destinationChain)).to.be.revertedWith(
         'Donation amount must be greater than zero'
       );
     });
