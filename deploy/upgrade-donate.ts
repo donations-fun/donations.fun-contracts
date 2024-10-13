@@ -27,7 +27,6 @@ async function verifyDeployment(configInterchainTokenServiceAddress: string, con
 
 const main = async (hre: HardhatRuntimeEnvironment) => {
   const Donate = require('#artifacts/contracts/donate/Donate.sol/Donate.json');
-  // const OldDonate = require('./abis/OldDonate.json'); // TODO: Update this when upgrading if needed
 
   const networkName = hre.network.name;
 
@@ -70,8 +69,7 @@ const main = async (hre: HardhatRuntimeEnvironment) => {
     contractArtifactName,
     proxyAddress,
     Donate,
-    null,
-    // OldDonate,
+    null, // require('./abis/OldDonate.json'), // TODO: Change this if needed
     reinitializeArgs,
     {
       wallet,
