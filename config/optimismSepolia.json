@@ -18,7 +18,8 @@
         }
       },
       "analyticTokens": [
-        "0xE4aB69C077896252FAFBD49EFD26B5D171A32410"
+        "0xE4aB69C077896252FAFBD49EFD26B5D171A32410",
+        "0x2ca609315bdaf59a8bcc523aee790bc64a78b2cc"
       ],
       "address": "0x6E01Eed9f11838c98a10289E006321283fE5c564",
       "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
