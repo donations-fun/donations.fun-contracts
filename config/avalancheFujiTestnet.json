@@ -12,6 +12,10 @@
         "other-charity": {
           "destinationChain": "eth-sepolia",
           "charityAddress": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC"
+        },
+        "Save the Children": {
+          "destinationChain": "eth-sepolia",
+          "charityAddress": "0x4aAb2278a1325cFdbDF389e0664D100c74B95cf5"
         }
       },
       "analyticTokens": [
