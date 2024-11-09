@@ -23,6 +23,12 @@ and if the appropriate values are set in it (for verification) or if the address
 
 ### Management functions
 
+#### Add Analytic Tokens
+`npm run deploy:donate:add-analytic-tokens`
+
+`npm run deploy:donate:add-analytic-tokens -- --network optimismSepolia`
+
+#### Add Known Charities Interchain
 `npm run deploy:donate:add-known-charities-interchain`
 
 `npm run deploy:donate:add-known-charities-interchain -- --network optimismSepolia`
