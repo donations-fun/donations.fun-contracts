@@ -9,6 +9,7 @@
     "deploy:donate": "hardhat run deploy/deploy-donate.ts",
     "deploy:donate:add-known-charities-interchain": "hardhat run deploy/donate-add-known-charities-interchain.ts",
     "deploy:donate:add-analytic-tokens": "hardhat run deploy/donate-add-analytic-tokens.ts",
+    "deploy:donate:remove-analytic-tokens": "hardhat run deploy/donate-remove-analytic-tokens.ts",
     "upgrade:donate": "hardhat run deploy/upgrade-donate.ts",
     "deploy:multiversx:donate": "CHAIN=devnet tsx multiversx/interact/multiversx.ts deploy-donate",
     "upgrade:multiversx:donate": "CHAIN=devnet tsx multiversx/interact/multiversx.ts upgrade-donate",
