@@ -7,6 +7,7 @@
   "repository": "https://github.com/raress96/donate.fun-contracts",
   "scripts": {
     "deploy:donate": "hardhat run deploy/deploy-donate.ts",
+    "deploy:donate:add-known-charities": "hardhat run deploy/donate-add-known-charities.ts",
     "deploy:donate:add-known-charities-interchain": "hardhat run deploy/donate-add-known-charities-interchain.ts",
     "deploy:donate:add-analytic-tokens": "hardhat run deploy/donate-add-analytic-tokens.ts",
     "deploy:donate:remove-analytic-tokens": "hardhat run deploy/donate-remove-analytic-tokens.ts",

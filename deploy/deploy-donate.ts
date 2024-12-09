@@ -103,30 +103,6 @@ const main = async (hre: HardhatRuntimeEnvironment) => {
 
   printInfo('Deployment status', 'SUCCESS');
 
-  if (contractConfig?.knownCharities) {
-    for (const charityName in contractConfig.knownCharities) {
-      const chainAddress = contractConfig.knownCharities[charityName];
-
-      printInfo(`Adding known charity ${charityName}`, chainAddress);
-
-      const transaction = await contract.addKnownCharity(charityName, chainAddress);
-      await transaction.wait();
-
-      console.log('Sent transaction', transaction.hash);
-    }
-  }
-
-  if (contractConfig?.analyticTokens) {
-    for (const tokenAddress of contractConfig.analyticTokens) {
-      printInfo(`Adding analytic token`, tokenAddress);
-
-      const transaction = await contract.addAnalyticsToken(tokenAddress);
-      await transaction.wait();
-
-      console.log('Sent transaction', transaction.hash);
-    }
-  }
-
   saveConfig(config, networkName);
 }
 

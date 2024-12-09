@@ -1,17 +1,16 @@
 {
   "contracts": {
     "InterchainTokenService": {
-      "address": "0x144c3d7A5f5198EF3B46A8258b35E903cf197A66"
+      "address": "0x2269B93c8D8D4AfcE9786d2940F5Fcd4386Db7ff"
     },
     "Donate": {
       "knownCharities": {
-        "first-charity": "0x322Ff96091A8297AB3A7847761b40eD5230d5a3c",
-        "second-charity": "0x693854A42cCc3016ec7F167D720cDf46c51F5fca"
+        "Greenpeace": "0x322Ff96091A8297AB3A7847761b40eD5230d5a3c"
       },
       "knownCharitiesInterchain": {
-        "other-charity": {
+        "Internet Archive": {
           "destinationChain": "eth-sepolia",
-          "charityAddress": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC"
+          "charityAddress": "0x1B40ed3d89fd40f875bF62A0ce79f562714d011E"
         },
         "Save the Children": {
           "destinationChain": "eth-sepolia",
@@ -19,15 +18,14 @@
         }
       },
       "analyticTokens": [
-        "0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846",
-        "0x148FB106ad3ccA29d5bB62841dF679d54AF3dda4",
         "0x9C5823CBAa5945E68873ac4af1081a464E4AD755",
-        "0xd00ae08403B9bbb9124bB305C09058E32C39A48c"
+        "0xd00ae08403b9bbb9124bb305c09058e32c39a48c",
+        "0x0ea1088e63cdf93eb179f2002a8b200d7b8f1e53"
       ],
-      "address": "0xcC2C1c88B099e9d02D8c941c7a3d1232335a9940",
       "deployer": "0xF12372616f9c986355414BA06b3Ca954c0a7b0dC",
       "deploymentMethod": "create2",
-      "salt": "Donate"
+      "salt": "Donate",
+      "address": "0xbe68A603af77c32d3e4EF5c06084331dF65AFE77"
     }
   }
 }

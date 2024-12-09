@@ -1,10 +1,10 @@
 {
   "contracts": {
     "AxelarAmplifierGateway": {
-      "address": "erd1qqqqqqqqqqqqqpgqvkhh6ex5m0sl0rgxn5790ljsscye0r48kkls7hrlaw"
+      "address": "erd1qqqqqqqqqqqqqpgqvaj9w3g006wgj7avhen3au27datwgk63kklszcamgw"
     },
     "InterchainTokenService": {
-      "address": "erd1qqqqqqqqqqqqqpgqcv3rhjjrqpl88es4q25lw03hfhpw6s36kklsn6t9a6"
+      "address": "erd1qqqqqqqqqqqqqpgqc5ypvy2d6z52fwscsfnrwcdkdh2fnthfkkls7kcn9j"
     },
     "Donate": {
       "knownCharities": {},

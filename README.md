@@ -28,6 +28,11 @@ and if the appropriate values are set in it (for verification) or if the address
 
 `npm run deploy:donate:add-analytic-tokens -- --network optimismSepolia`
 
+#### Add Known Charities
+`npm run deploy:donate:add-known-charities`
+
+`npm run deploy:donate:add-known-charities -- --network optimismSepolia`
+
 #### Add Known Charities Interchain
 `npm run deploy:donate:add-known-charities-interchain`
 
