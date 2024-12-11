@@ -1,0 +1,14 @@
+{
+  "contracts": {
+    "InterchainTokenService": {
+      "address": ""
+    },
+    "Donate": {
+      "knownCharities": {},
+      "knownCharitiesInterchain": {
+      },
+      "analyticTokens": [
+      ]
+    }
+  }
+}
