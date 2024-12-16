@@ -216,6 +216,8 @@ contract Donate is Initializable, UUPSUpgradeable, OwnableUpgradeable, Interchai
         address token,
         uint256 amount
     ) override internal virtual {
+        // TODO: Support donating to knownCharitiesInterchain here as well (charityId can be either for a knownCharity or a knownCharitiesInterchain)
+
         // Decodes the encodePacked encoded payload, which should be easy to create from other chains without abi support
         bytes32 charityId = payload.toBytes32(0);
         address user = payload.toAddress(32); // can be zero address
